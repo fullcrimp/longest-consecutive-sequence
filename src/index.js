@@ -1,54 +1,56 @@
 module.exports = function longestConsecutiveLength(array) {
-  let longest = 0,
+  let topSequenceLength = 0,
     sequenceCount = 0,
-    starts = {},
-    ends = {},
-    lengths = {}
+    leftBoundValues = {}, // number -> sequenceId dict
+    rightBoundValues = {}, // number -> sequenceId dict
+    sequenceLengthList = { // sequenceId -> length dict
+      top: 0,
+      update: function (id, value) {
+        this[id] += value
+        this.top = (this.top < this[id]) ? this[id] : this.top
+      }
+    } 
 
   for (let i = 0; i < array.length; i++) {
     let value = array[i]
-    let prevId = ends[value - 1],
-        nextId = starts[value + 1]
+    let leftSequenceId = rightBoundValues[value - 1],
+      rightSequenceId = leftBoundValues[value + 1]
 
-    // a piece is in-between two sequences
-    if (prevId && nextId) {
+      // a piece is in-between two sequences
+      if (leftSequenceId && rightSequenceId) {
+        delete leftBoundValues[value + 1] // remove swallowed bounds
+        delete rightBoundValues[value - 1]
+        rightBoundValues[value + sequenceLengthList[rightSequenceId]] = leftSequenceId // extend right bound of the left sequence to the right bound of the right sequence
+        
+        sequenceLengthList.update(leftSequenceId, sequenceLengthList[rightSequenceId] + 1)
+        continue
+      }
 
-      delete starts[value + 1]
+      // the piece is positioned right before a sequence
+      if (rightSequenceId) {
+        // swop leftBoundValues
+        delete leftBoundValues[value + 1]
+        leftBoundValues[value] = rightSequenceId
 
-      lengths[prevId] += lengths[nextId] + 1
-      longest = (longest < lengths[prevId]) ? lengths[prevId] : longest
-      continue
-    }
+        sequenceLengthList.update(rightSequenceId, 1)        
+        continue
+      }
 
-    // the piece is positioned right before a sequence
-    if (nextId) {
+      // the piece is positioned right after a sequence
+      if (leftSequenceId) {
+        // swop rightBoundValues
+        delete rightBoundValues[value - 1]
+        rightBoundValues[value] = leftSequenceId
 
-      // swop starts
-      delete starts[value + 1]
-      starts[value] = nextId
-
-      lengths[nextId] += 1
-      longest = (longest < lengths[nextId]) ? lengths[nextId] : longest
-      continue
-    }
-
-    // the piece is positioned right after a sequence
-    if (prevId) {
-
-      // swop ends
-      delete ends[value - 1]
-      ends[value] = prevId
-
-      lengths[prevId] += 1
-      longest = (longest < lengths[prevId]) ? lengths[prevId] : longest
-      continue
-    }
+        sequenceLengthList.update(leftSequenceId, 1)                
+        continue
+      }
 
     // add a new sequence
-    id = ++sequenceCount
-    starts[value] = id
-    ends[value] = id
-    lengths[id] = 1
+    let id = ++sequenceCount
+    leftBoundValues[value] = id
+    rightBoundValues[value] = id
+    sequenceLengthList[id] = 1
   }
-  return longest
+  return sequenceLengthList.top
 }
