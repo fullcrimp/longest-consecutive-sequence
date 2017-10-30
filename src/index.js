@@ -5,7 +5,7 @@ module.exports = function longestConsecutiveLength(array) {
       top: 0,
       count: 0,
       update: function (id, value) {
-        this[id] += value
+        this[id] = (typeof this[id] === 'undefined') ? value : this[id] + value
         this.top = (this.top < this[id]) ? this[id] : this.top
       }
     }
@@ -50,7 +50,7 @@ module.exports = function longestConsecutiveLength(array) {
     let id = ++sequenceLengthList.count
     leftBoundValues[value] = id
     rightBoundValues[value] = id
-    sequenceLengthList[id] = 1
+    sequenceLengthList.update(id, 1)
   }
-  return sequenceLengthList.top
+  return (sequenceLengthList.top > 1) ? sequenceLengthList.top : 0
 }
